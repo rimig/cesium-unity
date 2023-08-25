@@ -65,7 +65,9 @@ namespace Build
         {
             get
             {
-                return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(GetSourceFilePathName()) ?? "", ".."));
+                // HACK for Linux
+                return "/cesium-unity-samples/Packages/com.cesium.unity";
+                // return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(GetSourceFilePathName()) ?? "", ".."));
             }
         }
 

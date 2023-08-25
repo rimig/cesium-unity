@@ -219,6 +219,28 @@ namespace Build
                     Console.WriteLine("**** Adding generated files (for the iOS Player) to the package");
                     AddGeneratedFiles("!UNITY_EDITOR && UNITY_IOS", generatedRuntimePath, Path.Combine(outputPackagePath, "Runtime", "generated"));
                 }
+                else if (OperatingSystem.IsLinux()) {
+                    Console.WriteLine("**** Compiling for Linux");
+
+                    // Do I need to build with StandaloneLinux64 if only targeting Android (Quest Pro)?
+
+                    // Build for Android
+                    Console.WriteLine("**** Compiling for Android Player");
+                    unity.Run(new[]
+                    {
+                        "-batchmode",
+                        "-nographics",
+                        "-projectPath",
+                        Utility.ProjectRoot,
+                        "-buildTarget",
+                        "Android",
+                        "-executeMethod",
+                        "CesiumForUnity.BuildCesiumForUnity.CompileForAndroidAndExit"
+                    });
+
+                    Console.WriteLine("**** Adding generated files (for the Android Player) to the package");
+                    AddGeneratedFiles("!UNITY_EDITOR && UNITY_ANDROID", generatedRuntimePath, Path.Combine(outputPackagePath, "Runtime", "generated"));
+                }
 
                 Console.WriteLine("**** Copying the rest of the package");
                 CopyPackageContents(Utility.PackageRoot, outputPackagePath);
@@ -377,7 +399,14 @@ namespace Build
                 "Runtime/ConfigureReinterop.cs",
                 "Runtime/ConfigureReinterop.cs.meta",
                 "Runtime/csc.rsp",
-                "Runtime/csc.rsp.meta"
+                "Runtime/csc.rsp.meta",
+
+                // HACK FOR LINUX
+                // not sure if this is right but these throw errors later when we build on our side, didn't see these in downloaded package
+                // Unity.SourceGenerators/Unity.MonoScriptGenerator.MonoScriptInfoGenerator/AssemblyMonoScriptTypes.gen.cs(3,6): 
+                //  error CS0579: Duplicate 'System.ComponentModel.EditorBrowsableAttribute' attribute
+                "Runtime/generated/Unity.SourceGenerators.meta",
+                "Editor/generated/Unity.SourceGenerators.meta"
             };
 
             foreach (string fileToDelete in filesToDelete)
@@ -385,6 +414,22 @@ namespace Build
                 string path = Path.Combine(targetPath, fileToDelete);
                 if (File.Exists(path))
                     File.Delete(path);
+            }
+
+            // HACK FOR LINUX
+            // Delete Unity.SourceGenerators in Runtime and Editor generated folders
+            // Remove build-related sources files that don't make sense in the published package
+            string[] directoriesToDelete = new[]
+            {
+                "Editor/generated/Unity.SourceGenerators",
+                "Runtime/generated/Unity.SourceGenerators"
+            };
+
+            foreach (string directoryToDelete in directoriesToDelete)
+            {
+                string path = Path.Combine(targetPath, directoryToDelete);
+                if (Directory.Exists(path))
+                    Directory.Delete(path, true);
             }
         }
 

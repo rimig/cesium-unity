@@ -44,6 +44,33 @@ namespace Build
                     startInfo.ArgumentList.Add("-logFile");
                     startInfo.ArgumentList.Add(log);
 
+                    // HACK FOR LINUX
+                    // Inject our Unity Creds
+                    // Cesium for Unity Build process uses a local license server but we don't have that
+                    // assume for now if this is set they are all set
+                    if (Environment.GetEnvironmentVariable("UNITY_USERNAME") != null) {
+                        string unityUsername = Environment.GetEnvironmentVariable("UNITY_USERNAME")!;
+                        startInfo.ArgumentList.Add("-username");
+                        startInfo.ArgumentList.Add(unityUsername);
+                    } else {
+                        throw new Exception("ERROR: Need to set UNITY_USERNAME ENV Variable");
+                    }
+                    if (Environment.GetEnvironmentVariable("UNITY_PASSWORD") != null) {
+                        string unityPassword = Environment.GetEnvironmentVariable("UNITY_PASSWORD")!;
+                        startInfo.ArgumentList.Add("-password");
+                        startInfo.ArgumentList.Add(unityPassword);
+                    } else {
+                        throw new Exception("ERROR: Need to set UNITY_PASSWORD ENV Variable");
+                    }
+                    if (Environment.GetEnvironmentVariable("UNITY_SERIAL") != null) {
+                        string unitySerial = Environment.GetEnvironmentVariable("UNITY_SERIAL")!;
+                        startInfo.ArgumentList.Add("-serial");
+                        startInfo.ArgumentList.Add(unitySerial);
+                    } else {
+                        throw new Exception("ERROR: Need to set UNITY_SERIAL ENV Variable");
+                    }
+
+
                     unity.StartInfo = startInfo;
                     unity.StartInfo.RedirectStandardOutput = true;
                     unity.StartInfo.RedirectStandardError = true;
@@ -114,6 +141,10 @@ namespace Build
         public static Unity? FindUnity(string? version = null)
         {
             DirectoryInfo? unityDir = null;
+
+            // Shortcut for Linux
+            if (OperatingSystem.IsLinux())
+                return new Unity("/usr/bin/unity-editor");
 
             if (OperatingSystem.IsWindows())
             {
